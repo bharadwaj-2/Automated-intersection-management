@@ -1,1 +1,0 @@
-# Automated-Intersection-Management-System
