@@ -28,7 +28,7 @@ The objective minimizes the aggregate travel and intersection-crossing time for 
 ├── solver.py    # Pyomo/Gurobi optimization model and plot generation
 ├── Makefile     # Build instructions for the SDL2 C++ application
 ├── SDL2.dll     # SDL2 runtime library for Windows
-└── README.md
+
 ```
 
 ## Requirements
