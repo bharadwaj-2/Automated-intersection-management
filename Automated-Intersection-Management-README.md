@@ -1,0 +1,133 @@
+# Automated Intersection Management
+
+An optimization-based approach to coordinating autonomous vehicles through a four-way intersection. The project computes collision-free velocity and distance profiles that minimize the total time vehicles spend approaching and passing through the intersection.
+
+## Overview
+
+The Python solver models each vehicle's approach and traversal as a mixed-integer optimization problem. It determines when vehicles may enter conflicting portions of the intersection while enforcing:
+
+- speed limits and non-negative vehicle speeds;
+- arrival at the intersection boundary;
+- route-specific traversal distances for left, straight, and right movements; and
+- collision-avoidance ordering for every supported pair of conflicting movements.
+
+The objective minimizes the aggregate travel and intersection-crossing time for all vehicles.
+
+## Features
+
+- Collision-aware scheduling for left, straight, and right turns
+- Configurable intersection geometry and vehicle dynamics
+- Binary decision variables to order conflicting vehicle movements
+- Velocity and distance-profile plots for each solved scenario
+- A Windows-oriented `Makefile` for an SDL2-based C++ component
+
+## Project files
+
+```text
+.
+├── solver.py    # Pyomo/Gurobi optimization model and plot generation
+├── Makefile     # Build instructions for the SDL2 C++ application
+├── SDL2.dll     # SDL2 runtime library for Windows
+└── README.md
+```
+
+## Requirements
+
+### Python solver
+
+- Python 3.8 or later
+- [Pyomo](https://www.pyomo.org/)
+- [Matplotlib](https://matplotlib.org/)
+- [Gurobi](https://www.gurobi.com/) with a valid local license and Python bindings
+
+Install the Python packages:
+
+```bash
+pip install pyomo matplotlib gurobipy
+```
+
+> Gurobi is a commercial solver. Academic users may be eligible for a free academic license. The solver is configured to use Gurobi and has a 60-second time limit.
+
+## Running the optimizer
+
+Create a directory for plot output before running the solver:
+
+```bash
+mkdir results
+```
+
+Then invoke `solver.py` with the intersection parameters followed by one group of four values per vehicle:
+
+```text
+python solver.py N W L B ALPHA BETA VMAX n S0_1 V0_1 LANE_1 TURN_1 ... S0_n V0_n LANE_n TURN_n
+```
+
+### Parameters
+
+| Parameter | Description |
+| --- | --- |
+| `N` | Number of acceleration/deceleration control cycles before the intersection |
+| `W` | Lane width used in the intersection geometry |
+| `L` | Intersection length parameter |
+| `B` | Vehicle length/buffer parameter used in clearance constraints |
+| `ALPHA` | Acceleration magnitude |
+| `BETA` | Deceleration magnitude |
+| `VMAX` | Maximum allowed vehicle speed |
+| `n` | Number of vehicles |
+| `S0_i` | Initial distance of vehicle `i` from the intersection |
+| `V0_i` | Initial speed of vehicle `i` |
+| `LANE_i` | Incoming-lane index for vehicle `i` |
+| `TURN_i` | Intended movement: `1` = left, `2` = straight, `3` = right |
+
+### Command template
+
+The following template defines two vehicles. Replace every placeholder with values that match the units and lane-index convention used in your experiment.
+
+```bash
+python solver.py \
+  <N> <W> <L> <B> <ALPHA> <BETA> <VMAX> 2 \
+  <S0_1> <V0_1> <LANE_1> <TURN_1> \
+  <S0_2> <V0_2> <LANE_2> <TURN_2>
+```
+
+## Output
+
+When Gurobi finds an optimal solution, the program:
+
+- prints the optimized segment durations and intersection traversal time for each vehicle;
+- saves a velocity profile to `results/vprofiles_b.png`; and
+- saves a distance profile to `results/sprofiles_b.png`.
+
+If the model is infeasible, times out, or the solver aborts, the program prints the corresponding status.
+
+## Model summary
+
+For each vehicle, the solver uses non-negative duration variables for successive acceleration, coast, deceleration, and coast phases. Vehicle speed and remaining distance are calculated from these durations. Binary variables choose the passing order whenever two trajectories share a potential conflict region.
+
+The current model includes conflict constraints for these movement combinations:
+
+- left–straight;
+- left–right;
+- straight–straight;
+- straight–right; and
+- right–right.
+
+## SDL2 build notes
+
+The included `Makefile` is configured for MinGW `g++` and SDL2:
+
+```bash
+make
+```
+
+It expects C++ source files under `src/` and SDL headers/libraries under `SDL/include` and `SDL/lib`. These directories are not included in the current repository snapshot, so add or restore them before building the SDL2 component. On Windows, ensure `SDL2.dll` is beside the generated executable when running it.
+
+## Limitations and next steps
+
+- The optimizer currently depends on Gurobi and a valid license.
+- There is no bundled scenario/input file, so experiments must provide command-line vehicle data.
+- Adding sample scenarios, documented units, a lane diagram, and automated tests would make the project easier to reproduce.
+
+## License
+
+No license is currently specified. Add a license file before distributing or reusing the code.
